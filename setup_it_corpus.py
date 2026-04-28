@@ -14,7 +14,7 @@ Prerequisites:
 """
 
 import vertexai
-from vertexai import rag
+from vertexai.preview import rag
 from vertexai.generative_models import GenerativeModel, Tool
 import time
 
@@ -57,18 +57,11 @@ except Exception as e:
 # ============================================================================
 print("Step 2: Creating IT Service Desk corpus...")
 
-# Configure embedding model explicitly
-embedding_config = rag.RagEmbeddingModelConfig(
-    vertex_prediction_endpoint=rag.VertexPredictionEndpoint(
-        publisher_model="publishers/google/models/text-embedding-005"
-    )
-)
-
 corpus = rag.create_corpus(
     display_name="sjsu-it-servicedesk",
     description="SJSU IT Service Desk knowledge base - student-facing help documentation",
-    backend_config=rag.RagVectorDbConfig(
-        rag_embedding_model_config=embedding_config
+    embedding_model_config=rag.EmbeddingModelConfig(
+        publisher_model="publishers/google/models/text-embedding-005"
     ),
 )
 
@@ -142,10 +135,8 @@ if files:
         response = rag.retrieval_query(
             rag_resources=[rag.RagResource(rag_corpus=CORPUS_NAME)],
             text=test_query,
-            rag_retrieval_config=rag.RagRetrievalConfig(
-                top_k=3,
-                filter=rag.Filter(vector_distance_threshold=0.5)
-            ),
+            similarity_top_k=3,
+            vector_distance_threshold=0.5,
         )
         
         print(f'  Query: "{test_query}"')

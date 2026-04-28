@@ -20,17 +20,17 @@ Usage:
 import requests
 from bs4 import BeautifulSoup
 from google.cloud import storage
-from vertexai import rag
+from vertexai.preview import rag
 import hashlib
 import re
 from urllib.parse import urlparse
 from datetime import datetime
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-BUCKET_NAME = "sjsu-rag-it-genai-poc-kb"
-PROJECT_ID = "sjsu-it-genai-poc"
+try:
+    from config import BUCKET_NAME, PROJECT_ID
+except ImportError:
+    BUCKET_NAME = "sjsu-rag-it-genai-poc-kb"
+    PROJECT_ID = "sjsu-it-genai-poc"
 
 # User agent for web requests (identifies your scraper)
 USER_AGENT = "SJSU-IT-RAG-Bot/1.0 (Knowledge Base Indexer)"
@@ -196,18 +196,11 @@ def import_from_gcs_to_corpus(gcs_uri, corpus_name, display_name=None):
         RAG file resource on success, None on failure
     """
     try:
-        # Use transformation_config for chunking parameters
-        transformation_config = rag.TransformationConfig(
-            chunking_config=rag.ChunkingConfig(
-                chunk_size=512,
-                chunk_overlap=100
-            )
-        )
-        
         response = rag.import_files(
             corpus_name=corpus_name,
             paths=[gcs_uri],
-            transformation_config=transformation_config
+            chunk_size=512,
+            chunk_overlap=100,
         )
         
         # The import is async, but we get back metadata

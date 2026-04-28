@@ -18,25 +18,19 @@ Prerequisites:
 """
 
 import vertexai
-from vertexai import rag
+from vertexai.preview import rag
 from vertexai.generative_models import GenerativeModel, Tool
 from typing import List, Dict, Optional
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-PROJECT_ID = "sjsu-it-genai-poc"
-LOCATION = "us-west1"
+try:
+    from config import PROJECT_ID, LOCATION, CORPUS_NAME
+except ImportError:
+    PROJECT_ID = "sjsu-it-genai-poc"
+    LOCATION = "us-west1"
+    CORPUS_NAME = "projects/925509787316/locations/us-west1/ragCorpora/4035225266123964416"
 
-# Corpus name from setup_it_corpus.py
-CORPUS_NAME = "projects/925509787316/locations/us-west1/ragCorpora/4035225266123964416"
-
-# How many conversation turns to keep in memory (for context)
 MAX_HISTORY_TURNS = 5
 
-# ============================================================================
-# Initialize Vertex AI
-# ============================================================================
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
 # ============================================================================
@@ -148,10 +142,8 @@ def create_rag_model(corpus_name, model_name="gemini-2.5-flash"):
         retrieval=rag.Retrieval(
             source=rag.VertexRagStore(
                 rag_resources=[rag.RagResource(rag_corpus=corpus_name)],
-                rag_retrieval_config=rag.RagRetrievalConfig(
-                    top_k=5,  # Retrieve top 5 most relevant chunks
-                    filter=rag.Filter(vector_distance_threshold=0.5)
-                ),
+                similarity_top_k=5,
+                vector_distance_threshold=0.5,
             )
         )
     )
