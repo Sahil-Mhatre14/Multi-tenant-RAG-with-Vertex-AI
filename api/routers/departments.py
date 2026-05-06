@@ -11,7 +11,11 @@ router = APIRouter(prefix="/departments", tags=["departments"])
 async def list_departments():
     """List all configured departments and their display names."""
     deps = [
-        DepartmentInfo(dept_id=k, display_name=v["display_name"])
+        DepartmentInfo(
+            dept_id=k,
+            display_name=v["display_name"],
+            fallback_message=v.get("fallback_message", "Please contact the relevant department or visit sjsu.edu for help."),
+        )
         for k, v in DEPARTMENTS.items()
     ]
     return DepartmentsResponse(departments=deps)

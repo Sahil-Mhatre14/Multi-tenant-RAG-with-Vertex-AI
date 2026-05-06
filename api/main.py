@@ -8,23 +8,30 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import chat, ingest, corpus, departments
-from config import PROJECT_ID, LOCATION, DEPARTMENTS
+from api.routers import chat, ingest, corpus, departments, admin
+from config import PROJECT_ID, LOCATION, DEPARTMENTS, load_departments
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialise one RAG model per department corpus at startup."""
+    """Load departments from GCS, then initialise one RAG model per corpus."""
     import vertexai
     from qna import create_rag_model
 
     print(f"Initialising Vertex AI (project={PROJECT_ID}, location={LOCATION})…")
     vertexai.init(project=PROJECT_ID, location=LOCATION)
 
+    print("Loading departments from GCS…")
+    load_departments()
+
     app.state.rag_models = {}
     for dept_id, dept in DEPARTMENTS.items():
         print(f"  Loading RAG model for dept='{dept_id}'…")
-        app.state.rag_models[dept_id] = create_rag_model(dept["corpus_name"])
+        app.state.rag_models[dept_id] = create_rag_model(
+            corpus_name=dept["corpus_name"],
+            display_name=dept.get("display_name", dept_id),
+            fallback_message=dept.get("fallback_message", "Please contact the relevant department or visit sjsu.edu for help."),
+        )
 
     print("All RAG models ready.")
     yield
@@ -51,6 +58,7 @@ app.include_router(chat.router, prefix=API_PREFIX)
 app.include_router(ingest.router, prefix=API_PREFIX)
 app.include_router(corpus.router, prefix=API_PREFIX)
 app.include_router(departments.router, prefix=API_PREFIX)
+app.include_router(admin.router, prefix=API_PREFIX)
 
 
 @app.get("/health")

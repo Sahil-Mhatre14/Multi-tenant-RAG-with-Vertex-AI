@@ -9,6 +9,7 @@ from typing import Optional
 class DepartmentInfo(BaseModel):
     dept_id: str
     display_name: str
+    fallback_message: str
 
 
 class DepartmentsResponse(BaseModel):
@@ -86,3 +87,22 @@ class ListFilesResponse(BaseModel):
 class DeleteFileResponse(BaseModel):
     success: bool
     message: str
+
+
+# ─── Admin ───────────────────────────────────────────────────────────────────
+
+class CreateDepartmentRequest(BaseModel):
+    dept_id: str
+    display_name: str
+    fallback_message: Optional[str] = None
+
+
+class UpdateDepartmentRequest(BaseModel):
+    display_name: Optional[str] = None
+    fallback_message: Optional[str] = None
+
+
+class CreateDepartmentResponse(BaseModel):
+    dept_id: str
+    display_name: str
+    corpus_name: str

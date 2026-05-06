@@ -136,7 +136,12 @@ Rewritten standalone question (one sentence, no preamble):"""
 # ============================================================================
 # Create RAG-enabled Gemini model
 # ============================================================================
-def create_rag_model(corpus_name, model_name="gemini-2.5-flash"):
+def create_rag_model(
+    corpus_name,
+    display_name: str = "SJSU",
+    fallback_message: str = "Please contact the relevant department or visit sjsu.edu for help.",
+    model_name: str = "gemini-2.5-flash",
+):
     """Create a Gemini model with RAG retrieval from the specified corpus."""
     rag_tool = Tool.from_retrieval(
         retrieval=rag.Retrieval(
@@ -147,18 +152,18 @@ def create_rag_model(corpus_name, model_name="gemini-2.5-flash"):
             )
         )
     )
-    
+
     model = GenerativeModel(
         model_name=model_name,
         tools=[rag_tool],
-        system_instruction="""You are the SJSU IT Service Desk assistant. 
-Answer questions based only on the provided context from IT documentation.
-Be concise and helpful. If the answer isn't in the context, say 
-"I don't have that information in my knowledge base. Please contact 
-the IT Service Desk at (408) 924-1530 or visit sjsu.edu/it for help."
-"""
+        system_instruction=(
+            f"You are the {display_name} assistant at SJSU. "
+            "Answer questions based only on the provided context from the knowledge base. "
+            "Be concise and helpful. If the answer isn't in the context, say: "
+            f'"I don\'t have that information in my knowledge base. {fallback_message}"'
+        ),
     )
-    
+
     return model
 
 # ============================================================================
