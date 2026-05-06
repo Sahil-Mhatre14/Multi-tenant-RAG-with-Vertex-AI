@@ -97,15 +97,20 @@ def rewrite_query_with_context(current_query: str, memory: ConversationMemory) -
     Returns:
         Standalone query that includes necessary context
     """
-    # If no history, return query as-is
     if memory.is_empty():
-        return current_query
-    
-    # Format history for the rewrite prompt
-    history_text = memory.format_history_for_prompt()
-    
-    # Create rewrite prompt
-    rewrite_prompt = f"""Given this conversation history:
+        # No conversation history — normalize the query to fix typos, spacing,
+        # and product name casing (e.g. "last pass" → "LastPass") so RAG
+        # retrieval isn't thrown off by minor surface-form mismatches.
+        prompt = f"""Normalize this search query for better retrieval in a university IT knowledge base.
+Fix spacing errors in product names (e.g. "last pass" → "LastPass", "google drive" → "Google Drive"),
+typos, and overly vague phrasing. Do not add information that isn't already implied.
+
+Query: "{current_query}"
+
+Normalized query (one sentence, no preamble):"""
+    else:
+        history_text = memory.format_history_for_prompt()
+        prompt = f"""Given this conversation history:
 
 {history_text}
 
@@ -114,20 +119,17 @@ Rewrite this follow-up question as a standalone, self-contained question that in
 Follow-up question: "{current_query}"
 
 Rewritten standalone question (one sentence, no preamble):"""
-    
+
     try:
-        # Use a simple model for rewriting (no RAG needed)
-        rewriter = GenerativeModel("gemini-2.5-flash")
-        response = rewriter.generate_content(rewrite_prompt)
-        
-        standalone_query = response.text.strip()
-        
-        # Remove quotes if the model added them
-        if standalone_query.startswith('"') and standalone_query.endswith('"'):
-            standalone_query = standalone_query[1:-1]
-        
-        return standalone_query
-        
+        rewriter = GenerativeModel("gemini-2.5-pro")
+        response = rewriter.generate_content(prompt)
+        result = response.text.strip()
+
+        if result.startswith('"') and result.endswith('"'):
+            result = result[1:-1]
+
+        return result
+
     except Exception as e:
         print(f"⚠ Query rewriting failed: {e}")
         print(f"  Using original query instead.\n")
@@ -140,14 +142,14 @@ def create_rag_model(
     corpus_name,
     display_name: str = "SJSU",
     fallback_message: str = "Please contact the relevant department or visit sjsu.edu for help.",
-    model_name: str = "gemini-2.5-flash",
+    model_name: str = "gemini-2.5-pro",
 ):
     """Create a Gemini model with RAG retrieval from the specified corpus."""
     rag_tool = Tool.from_retrieval(
         retrieval=rag.Retrieval(
             source=rag.VertexRagStore(
                 rag_resources=[rag.RagResource(rag_corpus=corpus_name)],
-                similarity_top_k=5,
+                similarity_top_k=10,
                 vector_distance_threshold=0.5,
             )
         )

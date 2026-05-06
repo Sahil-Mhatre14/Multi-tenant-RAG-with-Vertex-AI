@@ -199,8 +199,8 @@ def import_from_gcs_to_corpus(gcs_uri, corpus_name, display_name=None):
         response = rag.import_files(
             corpus_name=corpus_name,
             paths=[gcs_uri],
-            chunk_size=512,
-            chunk_overlap=100,
+            chunk_size=256,
+            chunk_overlap=50,
         )
         
         # The import is async, but we get back metadata
